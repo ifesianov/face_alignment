@@ -10,6 +10,10 @@ class File:
                                if os.path.splitext(file_name)[1] in ('.jpg', '.png')]
 
     @staticmethod
+    def get_img_dir_name(path):
+        return [el for el in os.listdir(path) if os.path.isdir(el)]
+
+    @staticmethod
     def land_to_txt(file_name, points):
         with open(os.path.join(file_name), mode='w') as land_file:
             for el in points:

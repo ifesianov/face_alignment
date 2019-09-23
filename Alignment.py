@@ -15,9 +15,8 @@ class Alignment:
     # Dimensions of output image
     W = 600
     H = 600
-    IDEAL_MASK_FILE_NAME = 'average_face_points.txt'
 
-    def __init__(self, land_path, img_path, file_name, deformed_img_path):
+    def __init__(self, land_path, img_path, deformed_img_path, ideal_mask, file_name):
         self.land_path = land_path
         self.img_path = img_path
         self.deformed_img_path = deformed_img_path
@@ -27,7 +26,7 @@ class Alignment:
         self._deformed_img_file_name = None
 
         self._triangulation = None
-        self._ideal_mask = None
+        self.ideal_mask = ideal_mask
 
         self._img = None
         self._land = None
@@ -39,11 +38,13 @@ class Alignment:
         self.deformed_img = np.zeros((self.H, self.W, 3), np.float32())
 
     def run(self):
-        print('Alignment of "{}" has been started'.format(self.img_file_name))
+        # print('Alignment of "{}" has been started'.format(self.img_file_name))
         self.warp()
+        self.crop_img()
         self.save_deformed_img()
-        self.show_deformed_img()
-        print('Done')
+        # self.show_deformed_img()
+        # print('Done')
+        # print('Alignmented image is saved.')
 
     @property
     def land_file_name(self):
@@ -68,12 +69,6 @@ class Alignment:
         if self._norm_land is None:
             self._norm_img, self._norm_land = self.eyes_similarity_transformation()
         return self._norm_land
-
-    @property
-    def ideal_mask(self):
-        if self._ideal_mask is None:
-            self._ideal_mask = self.read_ideal_mask()
-        return self._ideal_mask
 
     @property
     def img(self):
@@ -121,9 +116,6 @@ class Alignment:
                 (np.int(0.7 * self.W),
                  np.int(self.H / 3))]
 
-    def read_ideal_mask(self):
-        return File.read_land('', self.IDEAL_MASK_FILE_NAME)
-
     def get_eyes_corners_points(self):
         return [self.land[36],
                 self.land[45]]
@@ -162,6 +154,14 @@ class Alignment:
 
             MathHelper.warp_triangle(self.norm_img, self.deformed_img, t_in, t_out)
 
+    def crop_img(self):
+        x0 = int(self.ideal_mask[1][0])
+        x1 = int(self.ideal_mask[15][0])
+        y0 = int(self.ideal_mask[19][1])
+        y1 = int(self.ideal_mask[8][1])
+
+        self.deformed_img = self.deformed_img[y0:y1, x0:x1]
+
     def show_deformed_img(self):
         File.show_img(self.deformed_img)
 
@@ -169,9 +169,3 @@ class Alignment:
         File.save_img(os.path.join(self.deformed_img_path, self.deformed_img_file_name), self.deformed_img, convert_to_float=True)
 
 
-if __name__ == '__main__':
-    al = Alignment(land_path=LAND_PATH,
-                   img_path=IMG_PATH,
-                   file_name=FILE_NAME,
-                   deformed_img_path=DEFORMED_IMG_PATH)
-    al.run()

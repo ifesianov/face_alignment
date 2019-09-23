@@ -16,33 +16,21 @@ FILE_NAME = 'atynkaliuk.jpg'
 class LandmarksDetector:
     PREDICTION_MODEL = os.path.join('landmarks_model', 'shape_predictor_68_face_landmarks.dat')
 
-    def __init__(self, land_path, img_path, file_name):
+    def __init__(self, land_path, img_path, face_detector, face_pose_predictor, file_name):
         self.land_path = land_path
         self.img_path = img_path
         self.img_file_name = file_name
         self._land_file_name = None
         self._img = None
 
-        self._face_detector = None
-        self._face_pose_predictor = None
+        self.face_detector = face_detector
+        self.face_pose_predictor = face_pose_predictor
 
     @property
     def land_file_name(self):
         if self._land_file_name is None:
             self._land_file_name = os.path.splitext(self.img_file_name)[0] + '.txt'
         return self._land_file_name
-
-    @property
-    def face_detector(self):
-        if self._face_detector is None:
-            self._face_detector = dlib.get_frontal_face_detector()
-        return self._face_detector
-
-    @property
-    def face_pose_predictor(self):
-        if self._face_pose_predictor is None:
-            self._face_pose_predictor = dlib.shape_predictor(self.PREDICTION_MODEL)
-        return self._face_pose_predictor
 
     @property
     def img(self):
@@ -68,14 +56,13 @@ class LandmarksDetector:
         return points
 
     def run(self, predict_face=False):
-        print('Start')
+        # print('Start')
         points = self.predict_landmarks(predict_face)
         self.land_to_txt(points)
-        print('Landmarks saved!')
-
+        # print('Landmarks saved!'
 
 if __name__ == '__main__':
     lm = LandmarksDetector(land_path=LAND_PATH,
                            img_path=IMG_PATH,
                            file_name=FILE_NAME)
-    lm.run(predict_face=True)
+    lm.run(predict_face=False)
