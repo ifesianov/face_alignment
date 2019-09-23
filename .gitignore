@@ -1,0 +1,6 @@
+images/
+landmarks/
+deformed_images/
+landmarks_model/
+.idea/
+__pycache__/
