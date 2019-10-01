@@ -1,27 +1,31 @@
 import dlib
 from skimage import io
 import os
+import numpy as np
 from File import File
+import matplotlib.pyplot as plt
+import face_alignment
 
 # You can download the required pre-trained face detection model here:
 # http://dlib.net/files/shape_predictor_68_face_landmarks.dat.bz2
 
 
-IMG_PATH = 'images'
+IMG_PATH = 'images/data/13_1'
 LAND_PATH = 'landmarks'
 
-FILE_NAME = 'atynkaliuk.jpg'
+FILE_NAME = '1561122879.5871034.jpg'
+
+LANDMARKS_PREDICTION_MODEL = os.path.join('landmarks_model', 'shape_predictor_68_face_landmarks.dat')
 
 
 class LandmarksDetector:
-    PREDICTION_MODEL = os.path.join('landmarks_model', 'shape_predictor_68_face_landmarks.dat')
-
     def __init__(self, land_path, img_path, face_detector, face_pose_predictor, file_name):
         self.land_path = land_path
         self.img_path = img_path
         self.img_file_name = file_name
         self._land_file_name = None
         self._img = None
+        self._landmarks = None
 
         self.face_detector = face_detector
         self.face_pose_predictor = face_pose_predictor
@@ -38,6 +42,19 @@ class LandmarksDetector:
             self._img = File.read_img(self.img_path, self.img_file_name)
         return self._img
 
+    @property
+    def landmarks(self, predict_face=False):
+        if self._landmarks is None:
+            if self.face_pose_predictor.__class__.__name__ == 'shape_predictor':
+                rect = self.get_face_rect() if predict_face\
+                    else dlib.rectangle(left=0, top=0, right=self.img.shape[0], bottom=self.img.shape[1])
+
+                pose_landmarks = self.face_pose_predictor(self.img, rect)
+                self._landmarks = np.array([[el.x, el.y] for el in list(pose_landmarks.parts())])
+            elif self.face_pose_predictor.__class__.__name__ == 'FaceAlignment':
+                self._landmarks = self.face_pose_predictor.get_landmarks(self.img)[-1]
+        return self._landmarks
+
     def get_face_rect(self):
         detected_faces = self.face_detector(self.img, 1)
         if len(detected_faces) > 1:
@@ -47,22 +64,32 @@ class LandmarksDetector:
     def land_to_txt(self, points):
         File.land_to_txt(os.path.join(self.land_path, self.land_file_name), points)
 
-    def predict_landmarks(self, predict_face=False):
-        rect = self.get_face_rect() if predict_face\
-            else dlib.rectangle(left=0, top=0, right=self.img.shape[0], bottom=self.img.shape[1])
+    def show_land_on_img(self):
+        fig = plt.figure(figsize=plt.figaspect(.5))
+        ax = fig.add_subplot(1, 2, 1)
+        ax.imshow(self.img)
 
-        pose_landmarks = self.face_pose_predictor(self.img, rect)
-        points = [(el.x, el.y) for el in list(pose_landmarks.parts())]
-        return points
+        ax.scatter(self.landmarks[:, 0],
+                   self.landmarks[:, 1])
+
+        ax.axis('off')
+
+        plt.show()
 
     def run(self, predict_face=False):
         # print('Start')
-        points = self.predict_landmarks(predict_face)
+        points = self.landmarks
         self.land_to_txt(points)
         # print('Landmarks saved!'
 
 if __name__ == '__main__':
+    face_detector = dlib.get_frontal_face_detector()
+    # face_pose_predictor = dlib.shape_predictor(LANDMARKS_PREDICTION_MODEL)
+    face_pose_predictor = face_alignment.FaceAlignment(face_alignment.LandmarksType._2D, device='cpu', flip_input=True)
     lm = LandmarksDetector(land_path=LAND_PATH,
                            img_path=IMG_PATH,
-                           file_name=FILE_NAME)
+                           file_name=FILE_NAME,
+                           face_detector=face_detector,
+                           face_pose_predictor=face_pose_predictor)
     lm.run(predict_face=False)
+    lm.show_land_on_img()

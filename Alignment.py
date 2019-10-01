@@ -166,6 +166,8 @@ class Alignment:
         File.show_img(self.deformed_img)
 
     def save_deformed_img(self):
+        if not os.path.exists(self.deformed_img_path):
+            os.makedirs(self.deformed_img_path)
         File.save_img(os.path.join(self.deformed_img_path, self.deformed_img_file_name), self.deformed_img, convert_to_float=True)
 
 

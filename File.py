@@ -11,7 +11,8 @@ class File:
 
     @staticmethod
     def get_img_dir_name(path):
-        return [el for el in os.listdir(path) if os.path.isdir(el)]
+        a = [el for el in os.listdir(path)]
+        return a
 
     @staticmethod
     def land_to_txt(file_name, points):
